@@ -1,17 +1,9 @@
 const { getOwnedTokenIds } = require('./src/nftFetcher');
 const { createBellCurveListings } = require('./src/listingManager');
-const { checkAndSetApprovals } = require('./src/approvals');
 
 async function main() {
     const contractAddress = '0x53d8cbfa0abfeab01ab5997827e67069c6b46c7a';
     const ownerAddress = process.env.WALLET_ADDRESS;
-    
-    // Check and set approvals first
-    const approved = await checkAndSetApprovals(contractAddress, ownerAddress);
-    if (!approved) {
-        console.log('Please ensure you have approved OpenSea before listing');
-        return;
-    }
     
     // Get all your tokens
     console.log('Fetching your owned tokens...');
@@ -46,6 +38,7 @@ async function main() {
         }
     ];
     
+    console.log('Starting to create listings...');
     // Create bell curve distributed listings
     await createBellCurveListings(
         contractAddress,

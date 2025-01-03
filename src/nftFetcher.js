@@ -1,37 +1,44 @@
-const { opensea } = require('./config');
+const axios = require('axios');
 
 async function getOwnedTokenIds(contractAddress, ownerAddress) {
     try {
-        let allAssets = [];
-        let offset = 0;
-        const limit = 50;  // OpenSea's max limit per request
-        
-        // Keep fetching until we have all assets
-        while (true) {
-            console.log(`Fetching tokens ${offset} to ${offset + limit}...`);
-            
-            const assets = await opensea.api.getAssets({
-                asset_contract_address: contractAddress,
-                owner: ownerAddress,
-                limit: limit,
-                offset: offset
-            });
-            
-            if (assets.assets.length === 0) break;
-            
-            allAssets = [...allAssets, ...assets.assets];
-            offset += limit;
-            
-            // Add a small delay between requests
-            await new Promise(resolve => setTimeout(resolve, 1000));
+        console.log('Fetching NFTs...');
+        console.log('Contract:', contractAddress);
+        console.log('Owner:', ownerAddress);
+
+        const opensea = axios.create({
+            baseURL: 'https://api.opensea.io/api',
+            headers: {
+                'X-API-KEY': process.env.OPENSEA_API_KEY,
+                'Accept': 'application/json'
+            }
+        });
+
+        // First, get all NFTs from the wallet
+        const response = await opensea.get(`/v2/chain/base/account/${ownerAddress}/nfts`, {
+            params: {
+                limit: 100
+            }
+        });
+
+        if (!response.data || !response.data.nfts) {
+            console.log('No NFTs found');
+            return [];
         }
-        
-        return allAssets.map(asset => ({
-            tokenId: asset.tokenId,
-            name: asset.name
-        }));
+
+        // Filter for our specific contract
+        const tokens = response.data.nfts
+            .filter(nft => nft.contract.toLowerCase() === contractAddress.toLowerCase())
+            .map(nft => ({
+                tokenId: nft.identifier,
+                name: nft.name
+            }));
+
+        console.log(`Found ${tokens.length} NFTs from contract ${contractAddress}`);
+        return tokens;
+
     } catch (error) {
-        console.error('Error fetching owned tokens:', error);
+        console.error('Error fetching owned tokens:', error.response?.data || error.message);
         return [];
     }
 }

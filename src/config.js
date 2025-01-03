@@ -1,21 +1,23 @@
 require('dotenv').config();
-const { OpenSeaSDK, Network } = require('opensea-js');
-const { Web3 } = require('web3');
+const { OpenSeaSDK, Chain } = require('opensea-js');
+const { ethers } = require('ethers');
 
-// Initialize Web3 with Base network
-const provider = new Web3.providers.HttpProvider(
+// Create provider
+const provider = new ethers.providers.JsonRpcProvider(
     `https://base-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`
 );
-const web3 = new Web3(provider);
 
-// Initialize OpenSea SDK with Base network
-const opensea = new OpenSeaSDK(provider, {
-    networkName: Network.Base, // Changed to Base
-    apiKey: process.env.OPENSEA_API_KEY
+// Add wallet to provider
+const signer = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
+
+// Initialize OpenSea SDK with Base chain
+const opensea = new OpenSeaSDK(signer, {
+    chain: Chain.Base,  // Specify Base chain
+    apiKey: process.env.OPENSEA_API_KEY,
 });
 
 module.exports = {
-    web3,
     opensea,
-    provider
+    provider,
+    signer
 };
